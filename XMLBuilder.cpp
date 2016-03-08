@@ -1,4 +1,5 @@
 #include "XMLBuilder.h"
+#include "ParsedPacket.h"
 #include <netinet/ip.h>
 #include <netinet/tcp.h>
 #include <netinet/udp.h>
@@ -93,4 +94,13 @@ TiXmlElement *ToXml(udphdr *udp)
     udpXML->SetAttribute("check", udp->check);
 
     return udpXML;
+}
+
+TiXmlElement* ToXml(vlanhdr* vlan)
+{
+    TiXmlElement *vlanXML = new TiXmlElement("VLAN");
+    vlanXML->SetAttribute("tci",ntohs(vlan->vlan_tci));
+    vlanXML->SetAttribute("next_proto", ntohs(vlan->nextProto));
+    return vlanXML;
+
 }

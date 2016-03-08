@@ -20,7 +20,8 @@ int main(int argc, char **argv)
     TiXmlDocument doc;
     TiXmlDeclaration *decl = new TiXmlDeclaration("1.0", "", "");
     doc.LinkEndChild(decl);
-    TiXmlElement *root = new TiXmlElement(filename);
+    TiXmlElement *root = new TiXmlElement("file");
+    root->SetAttribute("name", filename);
     doc.LinkEndChild(root);
 
     u_char *data;
@@ -33,6 +34,8 @@ int main(int argc, char **argv)
         root->LinkEndChild(packet);
         if (pp.Eth())
             packet->LinkEndChild(ToXml(pp.Eth()));
+        for (auto vlan : pp.VlanList())
+            packet->LinkEndChild(ToXml(vlan));
         if (pp.IP())
             packet->LinkEndChild(ToXml(pp.IP()));
         if (pp.Tcp())

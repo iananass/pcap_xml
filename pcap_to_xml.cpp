@@ -9,7 +9,9 @@
 
 int main(int argc, char **argv)
 {
-    const char *filename = "dump.cap";
+    const char *filename;
+    if (argc == 1) filename = "dump.cap";
+    else filename = argv[1];
     char errbuf[PCAP_ERRBUF_SIZE];
     pcap_t *p = pcap_open_offline(filename, errbuf);
     if (!p) {

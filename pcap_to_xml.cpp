@@ -52,7 +52,7 @@ int main(int argc, char **argv)
         if (pp.Udp())
             packet->LinkEndChild(ToXml(pp.Udp()));
         if (pp.DataLen())
-            packet->LinkEndChild(ToXml(pp.Data(), pp.DataLen()));
+            packet->LinkEndChild(ToXml(pp.Data(), pp.DataLen(), "payload"));
     }
     doc.Print(stdout);
 }

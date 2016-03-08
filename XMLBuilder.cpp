@@ -51,7 +51,7 @@ TiXmlElement *ToXml(ethhdr *eth)
 TiXmlElement *ToXml(iphdr *ip)
 {
     TiXmlElement *ipXML = new TiXmlElement("IP");
-    ipXML->SetAttribute("ihl", ip->ihl);
+    ipXML->SetAttribute("header_len", ip->ihl * 4);
     ipXML->SetAttribute("version", ip->version);
     ipXML->SetAttribute("tos", ip->tos);
     ipXML->SetAttribute("tot_len", ntohs(ip->tot_len));
@@ -62,6 +62,8 @@ TiXmlElement *ToXml(iphdr *ip)
     ipXML->SetAttribute("check", ntohs(ip->check));
     ipXML->SetAttribute("src", ipToString(ip->saddr));
     ipXML->SetAttribute("dst", ipToString(ip->daddr));
+    if (ip->ihl > 5)
+        ipXML->LinkEndChild(ToXml(reinterpret_cast<u_char *>(ip) + sizeof(iphdr), (ip->ihl - 5) * 4, "options"));
     return ipXML;
 
 }
@@ -73,7 +75,7 @@ TiXmlElement *ToXml(tcphdr *tcp)
     tcpXML->SetAttribute("dest", ntohs(tcp->dest));
     tcpXML->SetAttribute("seq", intToHexString(tcp->seq));
     tcpXML->SetAttribute("ack_seq", intToHexString(tcp->ack_seq));
-    tcpXML->SetAttribute("dataoffset", tcp->doff);
+    tcpXML->SetAttribute("header_len", tcp->doff * 4);
     tcpXML->SetAttribute("flag_urg", tcp->urg);
     tcpXML->SetAttribute("flag_ack", tcp->ack);
     tcpXML->SetAttribute("flag_psh", tcp->psh);
@@ -83,6 +85,9 @@ TiXmlElement *ToXml(tcphdr *tcp)
     tcpXML->SetAttribute("window", ntohs(tcp->window));
     tcpXML->SetAttribute("check", ntohs(tcp->check));
     tcpXML->SetAttribute("urg_ptr", ntohs(tcp->urg_ptr));
+    if (tcp->doff > 5)
+        tcpXML->LinkEndChild(ToXml(reinterpret_cast<u_char *>(tcp) + sizeof(tcphdr), (tcp->doff - 5) * 4, "options"));
+
     return tcpXML;
 }
 
@@ -127,15 +132,15 @@ TiXmlElement *ToXml(icmphdr *icmp)
     icmpXML->SetAttribute("type", icmp->type);
     icmpXML->SetAttribute("code", icmp->code);
     icmpXML->SetAttribute("checksum", intToHexString(icmp->checksum));
-    icmpXML->SetAttribute("data", ByteArrayToString(reinterpret_cast<u_char*>(&icmp->un), 4, " "));
+    icmpXML->SetAttribute("data", ByteArrayToString(reinterpret_cast<u_char *>(&icmp->un), 4, " "));
 
     return icmpXML;
 }
 
 
-TiXmlElement* ToXml(u_char* data, size_t len)
+TiXmlElement *ToXml(u_char *data, size_t len, const char *header)
 {
-    TiXmlElement* dataXML = new TiXmlElement("Data");
+    TiXmlElement *dataXML = new TiXmlElement(header);
     dataXML->SetAttribute("len", len);
     dataXML->SetAttribute("bytes", ByteArrayToString(data, len, " "));
     return dataXML;

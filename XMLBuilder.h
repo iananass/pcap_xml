@@ -19,6 +19,6 @@ TiXmlElement* ToXml(udphdr* udp);
 TiXmlElement* ToXml(vlanhdr* vlan);
 TiXmlElement* ToXml(arpheader* arp);
 TiXmlElement* ToXml(icmphdr* icmp);
-TiXmlElement* ToXml(u_char* data, size_t len);
+TiXmlElement *ToXml(u_char *data, size_t len, const char *header);
 
 #endif //PROJECT_XMLBUILDER_H

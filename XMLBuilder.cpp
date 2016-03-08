@@ -10,6 +10,7 @@
 #include <arpa/inet.h>
 #include <string>
 #include <iomanip>
+#include <netinet/ip_icmp.h>
 
 static char *ipToString(u_int32_t long_address)
 {
@@ -96,11 +97,46 @@ TiXmlElement *ToXml(udphdr *udp)
     return udpXML;
 }
 
-TiXmlElement* ToXml(vlanhdr* vlan)
+TiXmlElement *ToXml(vlanhdr *vlan)
 {
     TiXmlElement *vlanXML = new TiXmlElement("VLAN");
-    vlanXML->SetAttribute("tci",ntohs(vlan->vlan_tci));
+    vlanXML->SetAttribute("tci", ntohs(vlan->vlan_tci));
     vlanXML->SetAttribute("next_proto", ntohs(vlan->nextProto));
     return vlanXML;
 
+}
+
+TiXmlElement *ToXml(arpheader *arp)
+{
+    TiXmlElement *arpXML = new TiXmlElement("ARP");
+    arpXML->SetAttribute("h_type", ntohs(arp->hd));
+    arpXML->SetAttribute("p_type", ntohs(arp->pr));
+    arpXML->SetAttribute("h_len", arp->hdl);
+    arpXML->SetAttribute("p_len", arp->prl);
+    arpXML->SetAttribute("operation", htons(arp->op));
+    arpXML->SetAttribute("sha", MacAddrToString(arp->sha));
+    arpXML->SetAttribute("spa", ipToString(arp->spa));
+    arpXML->SetAttribute("dha", MacAddrToString(arp->dha));
+    arpXML->SetAttribute("dpa", ipToString(arp->dpa));
+    return arpXML;
+}
+
+TiXmlElement *ToXml(icmphdr *icmp)
+{
+    TiXmlElement *icmpXML = new TiXmlElement("ICMP");
+    icmpXML->SetAttribute("type", icmp->type);
+    icmpXML->SetAttribute("code", icmp->code);
+    icmpXML->SetAttribute("checksum", intToHexString(icmp->checksum));
+    icmpXML->SetAttribute("data", ByteArrayToString(reinterpret_cast<u_char*>(&icmp->un), 4, " "));
+
+    return icmpXML;
+}
+
+
+TiXmlElement* ToXml(u_char* data, size_t len)
+{
+    TiXmlElement* dataXML = new TiXmlElement("Data");
+    dataXML->SetAttribute("len", len);
+    dataXML->SetAttribute("bytes", ByteArrayToString(data, len, " "));
+    return dataXML;
 }

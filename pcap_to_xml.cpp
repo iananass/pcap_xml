@@ -41,12 +41,18 @@ int main(int argc, char **argv)
             packet->LinkEndChild(ToXml(pp.Eth()));
         for (auto vlan : pp.VlanList())
             packet->LinkEndChild(ToXml(vlan));
+        if (pp.Arp())
+            packet->LinkEndChild(ToXml(pp.Arp()));
         if (pp.IP())
             packet->LinkEndChild(ToXml(pp.IP()));
+        if (pp.Icmp())
+            packet->LinkEndChild(ToXml(pp.Icmp()));
         if (pp.Tcp())
             packet->LinkEndChild(ToXml(pp.Tcp()));
         if (pp.Udp())
             packet->LinkEndChild(ToXml(pp.Udp()));
+        if (pp.DataLen())
+            packet->LinkEndChild(ToXml(pp.Data(), pp.DataLen()));
     }
     doc.Print(stdout);
 }

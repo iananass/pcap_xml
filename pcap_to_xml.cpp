@@ -53,10 +53,12 @@ int main(int argc, char **argv)
     while (data = const_cast<u_char *>(pcap_next(p, &hdr))) {
         ParsedPacket pp(data, hdr.caplen);
         TiXmlElement *packet = new TiXmlElement(std::string("Packet"));
-        packet->SetAttribute("len", hdr.caplen);
+
+        packet->LinkEndChild( new TiXmlComment((std::string("number ") + std::to_string(packetIndex++) ).c_str()) );
+        packet->LinkEndChild( new TiXmlComment((std::string("len=") + std::to_string(hdr.caplen) ).c_str()) );
+
         packet->SetAttribute("ts_sec", hdr.ts.tv_sec);
         packet->SetAttribute("ts_usec", hdr.ts.tv_usec);
-        packet->SetAttribute("number", packetIndex++);
         root->LinkEndChild(packet);
         if (pp.Eth())
             packet->LinkEndChild(ToXml(pp.Eth()));

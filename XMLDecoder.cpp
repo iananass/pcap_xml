@@ -241,7 +241,7 @@ int DecodeICMP(TiXmlElement *xml, u_char *data)
         || xml->QueryValueAttribute("code", &code) != TIXML_SUCCESS
         || xml->QueryValueAttribute("checksum", &icmp->checksum) != TIXML_SUCCESS
         || !xml->FirstChild()
-        || DecodeData(xml->FirstChild()->ToElement(), reinterpret_cast<u_char*>(&icmp->un)) == -1) {
+        || DecodeData(xml->FirstChild()->ToElement(), reinterpret_cast<u_char *>(&icmp->un)) == -1) {
         std::cerr << "ICMP parse error\n";
         return -1;
     }
@@ -253,20 +253,21 @@ int DecodeICMP(TiXmlElement *xml, u_char *data)
 
 void ParsePacket(TiXmlElement *pack, Dumper &dumper)
 {
-    int len;
+    int len = 0;
     int sec;
     int usec;
-    if (pack->QueryIntAttribute("len", &len) != TIXML_SUCCESS
-        || pack->QueryIntAttribute("ts_sec", &sec) != TIXML_SUCCESS
+    if (pack->QueryIntAttribute("ts_sec", &sec) != TIXML_SUCCESS
         || pack->QueryIntAttribute("ts_usec", &usec) != TIXML_SUCCESS) {
         std::cerr << "Packet parse error\n";
         return;
     }
 
-    u_char packet[len];
+    u_char packet[4096];
     u_char *data = packet;
 
     for (auto layer = pack->FirstChild(); layer; layer = layer->NextSibling()) {
+        if (layer->Type() != TiXmlNode::TINYXML_ELEMENT)
+            continue;
         std::string layerName(layer->Value());
         int parse = -1;
         if (layerName == "Ethernet") { parse = DecodeEthernet(layer->ToElement(), data); }
@@ -283,6 +284,7 @@ void ParsePacket(TiXmlElement *pack, Dumper &dumper)
             return;
         }
         data += parse;
+        len += parse;
     }
 
     dumper.DumpPacket(packet, len, sec, usec);

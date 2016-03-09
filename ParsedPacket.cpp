@@ -51,7 +51,7 @@ u_int16_t ParsedPacket::ParseARP(u_char*& data, int& len)
 	m_arp = reinterpret_cast<arpheader*> (data);
 	data += sizeof(arpheader);
 	len -= sizeof(arpheader);
-	return ProtoEnd;
+	return (len <= 0) ? ProtoEnd : ProtoData;
 }
 
 u_int16_t ParsedPacket::ParseMPLS(u_char*& data, int& len)

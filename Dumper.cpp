@@ -66,11 +66,11 @@ bool Dumper::IsOpened() const
     return m_out.is_open();
 }
 
-void Dumper::DumpPacket ( const u_char* data, u_int len )
+void Dumper::DumpPacket ( const u_char* data, u_int len, uint32_t sec, uint32_t usec)
 {
     pcaprec_hdr_t pack_hdr;
-    pack_hdr.ts_sec = 0;
-    pack_hdr.ts_usec = 0;
+    pack_hdr.ts_sec = sec;
+    pack_hdr.ts_usec = usec;
     pack_hdr.incl_len = pack_hdr.orig_len = len;
     m_out.write ( reinterpret_cast<const char*> ( &pack_hdr ), sizeof ( pack_hdr ) );
     m_out.write ( reinterpret_cast<const char*>(data), len );

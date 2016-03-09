@@ -12,7 +12,7 @@ public:
     bool Open ( const char* filename );
     bool IsOpened() const;
 
-    void DumpPacket ( const u_char* data, u_int len );
+    void DumpPacket ( const u_char* data, u_int len, uint32_t sec, uint32_t usec);
     void Flush();
     void Close();
 private:

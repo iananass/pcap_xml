@@ -51,7 +51,7 @@ TiXmlElement *ToXml(ethhdr *eth)
 TiXmlElement *ToXml(iphdr *ip)
 {
     TiXmlElement *ipXML = new TiXmlElement("IP");
-    ipXML->SetAttribute("header_len", ip->ihl * 4);
+    ipXML->SetAttribute("header_len", ip->ihl);
     ipXML->SetAttribute("version", ip->version);
     ipXML->SetAttribute("tos", ip->tos);
     ipXML->SetAttribute("tot_len", ntohs(ip->tot_len));
@@ -75,7 +75,7 @@ TiXmlElement *ToXml(tcphdr *tcp)
     tcpXML->SetAttribute("dest", ntohs(tcp->dest));
     tcpXML->SetAttribute("seq", intToHexString(tcp->seq));
     tcpXML->SetAttribute("ack_seq", intToHexString(tcp->ack_seq));
-    tcpXML->SetAttribute("header_len", tcp->doff * 4);
+    tcpXML->SetAttribute("header_len", tcp->doff);
     tcpXML->SetAttribute("flag_urg", tcp->urg);
     tcpXML->SetAttribute("flag_ack", tcp->ack);
     tcpXML->SetAttribute("flag_psh", tcp->psh);

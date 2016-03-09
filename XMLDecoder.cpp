@@ -24,22 +24,22 @@ bool MacStrToArray(const char *macStr, u_char *macArray)
             macArray[i] = (uint8_t) values[i];
     } else
         return false;
-    std::cout << std::endl;
     return true;
 }
+
+#define SwapUINT32(X) X = htonl(X)
+#define SwapUINT16(X) X = htons(X)
+
 
 int DecodeEthernet(TiXmlElement *ethXML, u_char *data)
 {
     std::string src, dst;
     int proto;
+    ethhdr *eth = reinterpret_cast<ethhdr *>(data);
     if (ethXML->QueryStringAttribute("dst", &dst) != TIXML_SUCCESS
         || ethXML->QueryStringAttribute("src", &src) != TIXML_SUCCESS
-        || ethXML->QueryIntAttribute("proto", &proto) != TIXML_SUCCESS) {
-        std::cerr << "Eth hdr parse error\n";
-        return -1;
-    }
-    ethhdr *eth = reinterpret_cast<ethhdr *>(data);
-    if (!MacStrToArray(src.c_str(), eth->h_source)
+        || ethXML->QueryIntAttribute("proto", &proto) != TIXML_SUCCESS
+        || !MacStrToArray(src.c_str(), eth->h_source)
         || !MacStrToArray(dst.c_str(), eth->h_dest)) {
         std::cerr << "Eth hdr parse error\n";
         return -1;
@@ -103,10 +103,10 @@ int DecodeIP(TiXmlElement *xml, u_char *data)
     ip->protocol = protocol;
     ip->saddr = inet_addr(saddr.c_str());
     ip->daddr = inet_addr(daddr.c_str());
-    ip->tot_len = htons(ip->tot_len);
-    ip->id = htons(ip->id);
-    ip->frag_off = htons(ip->frag_off);
-    ip->check = htons(ip->check);
+    SwapUINT16(ip->tot_len);
+    SwapUINT16(ip->id);
+    SwapUINT16(ip->frag_off);
+    SwapUINT16(ip->check);
 
     // check options
     if (ihl > 5) {
@@ -120,10 +120,18 @@ int DecodeIP(TiXmlElement *xml, u_char *data)
 }
 
 int DecodeVLAN(TiXmlElement *xml, u_char *data)
-{ return sizeof(vlanhdr); }
+{
+    vlanhdr *vlan = reinterpret_cast<vlanhdr *> (data);
+    if (xml->QueryValueAttribute("tci", &vlan->vlan_tci) != TIXML_SUCCESS
+        || xml->QueryValueAttribute("next_proto", &vlan->nextProto) != TIXML_SUCCESS) {
+        std::cerr << "VLAN hdr parse error\n";
+        return -1;
+    }
+    SwapUINT16(vlan->vlan_tci);
+    SwapUINT16(vlan->nextProto);
+    return sizeof(vlanhdr);
+}
 
-//<TCP source="59260" dest="80" seq="9498EF24" ack_seq="00000000" header_len="10"
-// flag_urg="0" flag_ack="0" flag_psh="0" flag_rst="0" flag_syn="1" flag_fin="0" window="29200" check="19820" urg_ptr="0">
 int DecodeTCP(TiXmlElement *xml, u_char *data)
 {
     tcphdr *tcp = reinterpret_cast<tcphdr *>(data);
@@ -153,10 +161,13 @@ int DecodeTCP(TiXmlElement *xml, u_char *data)
     std::stringstream ack_stream(ack_seq);
     ack_stream >> std::hex >> tcp->ack_seq;
 
-    tcp->source = htons(tcp->source);
-    tcp->dest = htons(tcp->dest);
-    tcp->seq = htonl(tcp->seq);
-    tcp->ack_seq = htonl(tcp->ack_seq);
+    SwapUINT16(tcp->source);
+    SwapUINT16(tcp->dest);
+    SwapUINT32(tcp->seq);
+    SwapUINT32(tcp->ack_seq);
+    SwapUINT16(tcp->window);
+    SwapUINT16(tcp->check);
+    SwapUINT16(tcp->urg_ptr);
     tcp->doff = doff;
     tcp->fin = fin;
     tcp->syn = syn;
@@ -164,9 +175,6 @@ int DecodeTCP(TiXmlElement *xml, u_char *data)
     tcp->psh = psh;
     tcp->ack = ack;
     tcp->urg = urg;
-    tcp->window = htons(tcp->window);
-    tcp->check = htons(tcp->check);
-    tcp->urg_ptr = htons(tcp->urg_ptr);
     // check options
     if (doff > 5) {
         if (DecodeOptions(xml, data + sizeof(tcphdr)) == -1) {
@@ -179,17 +187,72 @@ int DecodeTCP(TiXmlElement *xml, u_char *data)
 }
 
 int DecodeUDP(TiXmlElement *xml, u_char *data)
-{ return sizeof(udphdr); }
+{
+    udphdr *udp = reinterpret_cast<udphdr *>(data);
+    if (xml->QueryValueAttribute("source", &udp->source) != TIXML_SUCCESS
+        || xml->QueryValueAttribute("dest", &udp->dest) != TIXML_SUCCESS
+        || xml->QueryValueAttribute("check", &udp->check) != TIXML_SUCCESS
+        || xml->QueryValueAttribute("len", &udp->len) != TIXML_SUCCESS) {
+        std::cerr << "UDP hdr parse error\n";
+        return -1;
+    }
+    SwapUINT16(udp->source);
+    SwapUINT16(udp->dest);
+    SwapUINT16(udp->check);
+    SwapUINT16(udp->len);
+
+    return sizeof(udphdr);
+}
 
 int DecodeARP(TiXmlElement *xml, u_char *data)
-{ return sizeof(arpheader); }
+{
+    arpheader *arp = reinterpret_cast<arpheader *>(data);
+    std::string sha, dha, spa, dpa;
+    int hdl, prl;
+    if (xml->QueryValueAttribute("h_type", &arp->hd) != TIXML_SUCCESS
+        || xml->QueryValueAttribute("p_type", &arp->pr) != TIXML_SUCCESS
+        || xml->QueryValueAttribute("h_len", &hdl) != TIXML_SUCCESS
+        || xml->QueryValueAttribute("p_len", &prl) != TIXML_SUCCESS
+        || xml->QueryValueAttribute("operation", &arp->op) != TIXML_SUCCESS
+        || xml->QueryValueAttribute("spa", &spa) != TIXML_SUCCESS
+        || xml->QueryValueAttribute("dpa", &dpa) != TIXML_SUCCESS
+        || xml->QueryValueAttribute("sha", &sha) != TIXML_SUCCESS
+        || xml->QueryValueAttribute("dha", &dha) != TIXML_SUCCESS
+        || !MacStrToArray(sha.c_str(), arp->sha)
+        || !MacStrToArray(dha.c_str(), arp->dha)) {
+        std::cerr << "ARP header parse error\n";
+        return -1;
+    }
+    arp->hdl = hdl;
+    arp->prl = prl;
+    SwapUINT16(arp->hd);
+    SwapUINT16(arp->pr);
+    SwapUINT16(arp->op);
+    arp->spa = inet_addr(spa.c_str());
+    arp->dpa = inet_addr(dpa.c_str());
+    return sizeof(arpheader);
+}
 
 int DecodeICMP(TiXmlElement *xml, u_char *data)
-{ return sizeof(icmphdr); }
+{
+    icmphdr *icmp = reinterpret_cast<icmphdr *>(data);
+    int type, code;
+    if (xml->QueryIntAttribute("type", &type) != TIXML_SUCCESS
+        || xml->QueryValueAttribute("code", &code) != TIXML_SUCCESS
+        || xml->QueryValueAttribute("checksum", &icmp->checksum) != TIXML_SUCCESS
+        || !xml->FirstChild()
+        || DecodeData(xml->FirstChild()->ToElement(), reinterpret_cast<u_char*>(&icmp->un)) == -1) {
+        std::cerr << "ICMP parse error\n";
+        return -1;
+    }
+    icmp->type = type;
+    icmp->code = code;
+    SwapUINT16(icmp->checksum);
+    return sizeof(icmphdr);
+}
 
 void ParsePacket(TiXmlElement *pack, Dumper &dumper)
 {
-    std::cout << " --- packet ---\n";
     int len;
     int sec;
     int usec;
@@ -214,7 +277,7 @@ void ParsePacket(TiXmlElement *pack, Dumper &dumper)
         else if (layerName == "ARP") { parse = DecodeARP(layer->ToElement(), data); }
         else if (layerName == "ICMP") { parse = DecodeICMP(layer->ToElement(), data); }
         else if (layerName == "payload") { parse = DecodeData(layer->ToElement(), data); }
-        else std::cout << "Unknown layer: " << layerName << "\n";
+        else std::cerr << "Unknown layer: " << layerName << "\n";
         if (parse == -1) {
             std::cerr << "Parse Error\n";
             return;

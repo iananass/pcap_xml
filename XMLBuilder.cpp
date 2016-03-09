@@ -94,10 +94,10 @@ TiXmlElement *ToXml(tcphdr *tcp)
 TiXmlElement *ToXml(udphdr *udp)
 {
     TiXmlElement *udpXML = new TiXmlElement("UDP");
-    udpXML->SetAttribute("source", udp->source);
-    udpXML->SetAttribute("dest", udp->dest);
-    udpXML->SetAttribute("len", udp->len);
-    udpXML->SetAttribute("check", udp->check);
+    udpXML->SetAttribute("source", ntohs(udp->source));
+    udpXML->SetAttribute("dest", ntohs(udp->dest));
+    udpXML->SetAttribute("len", ntohs(udp->len));
+    udpXML->SetAttribute("check", ntohs(udp->check));
 
     return udpXML;
 }
@@ -131,9 +131,8 @@ TiXmlElement *ToXml(icmphdr *icmp)
     TiXmlElement *icmpXML = new TiXmlElement("ICMP");
     icmpXML->SetAttribute("type", icmp->type);
     icmpXML->SetAttribute("code", icmp->code);
-    icmpXML->SetAttribute("checksum", intToHexString(icmp->checksum));
-    icmpXML->SetAttribute("data", ByteArrayToString(reinterpret_cast<u_char *>(&icmp->un), 4, " "));
-
+    icmpXML->SetAttribute("checksum", ntohs(icmp->checksum));
+    icmpXML->LinkEndChild(ToXml(reinterpret_cast<u_char *>(&icmp->un), 4, "data"));
     return icmpXML;
 }
 

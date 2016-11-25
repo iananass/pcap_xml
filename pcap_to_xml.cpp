@@ -64,6 +64,8 @@ int main(int argc, char **argv)
             packet->LinkEndChild(ToXml(pp.Eth()));
         for (auto vlan : pp.VlanList())
             packet->LinkEndChild(ToXml(vlan));
+	for (auto mpls : pp.MPLSList())
+	    packet->LinkEndChild(ToXml(mpls));
         if (pp.Arp())
             packet->LinkEndChild(ToXml(pp.Arp()));
         if (pp.IP())

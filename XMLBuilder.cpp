@@ -111,6 +111,16 @@ TiXmlElement *ToXml(vlanhdr *vlan)
 
 }
 
+TiXmlElement* ToXml(mpls_hdr* mpls)
+{
+    TiXmlElement *vlanXML = new TiXmlElement("MPLS");
+    vlanXML->SetAttribute("label", mpls->label());
+    vlanXML->SetAttribute("experimental", mpls->experimental());
+    vlanXML->SetAttribute("stack_bottom", mpls->stack_bottom());
+    vlanXML->SetAttribute("ttl", mpls->ttl());
+    return vlanXML;
+}
+
 TiXmlElement *ToXml(arpheader *arp)
 {
     TiXmlElement *arpXML = new TiXmlElement("ARP");

@@ -132,6 +132,30 @@ int DecodeVLAN(TiXmlElement *xml, u_char *data)
     return sizeof(vlanhdr);
 }
 
+int DecodeMPLS(TiXmlElement *xml, u_char *data)
+{
+    u_int32_t label;
+    u_int16_t experimental;
+    u_int16_t stack_bottom;
+    u_int16_t ttl;
+
+    if (xml->QueryValueAttribute("label", &label) != TIXML_SUCCESS
+        || xml->QueryValueAttribute("experimental", &experimental) != TIXML_SUCCESS
+        || xml->QueryValueAttribute("stack_bottom", &stack_bottom) != TIXML_SUCCESS
+        || xml->QueryValueAttribute("ttl", &ttl) != TIXML_SUCCESS) {
+        std::cerr << "MPLS hdr parse error\n";
+        return -1;
+    }
+
+    mpls_hdr *mpls = reinterpret_cast<mpls_hdr *> (data);
+    mpls->label(label);
+    mpls->experimental(experimental);
+    mpls->stack_bottom(stack_bottom);
+    mpls->ttl(ttl);
+
+    return sizeof(mpls_hdr);
+}
+
 int DecodeTCP(TiXmlElement *xml, u_char *data)
 {
     tcphdr *tcp = reinterpret_cast<tcphdr *>(data);
@@ -272,6 +296,7 @@ void ParsePacket(TiXmlElement *pack, Dumper &dumper)
         int parse = -1;
         if (layerName == "Ethernet") { parse = DecodeEthernet(layer->ToElement(), data); }
         else if (layerName == "VLAN") { parse = DecodeVLAN(layer->ToElement(), data); }
+        else if (layerName == "MPLS") { parse = DecodeMPLS(layer->ToElement(), data); }
         else if (layerName == "IP") { parse = DecodeIP(layer->ToElement(), data); }
         else if (layerName == "TCP") { parse = DecodeTCP(layer->ToElement(), data); }
         else if (layerName == "UDP") { parse = DecodeUDP(layer->ToElement(), data); }

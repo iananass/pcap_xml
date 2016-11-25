@@ -7,11 +7,6 @@
 #include <netinet/tcp.h>
 #include <netinet/udp.h>
 
-struct mpls_hdr
-{
-	u_int32_t hdr;
-} __attribute__((__packed__));
-
 struct gre_hdr
 {
 	u_int8_t check_presented : 1;
@@ -56,9 +51,20 @@ u_int16_t ParsedPacket::ParseARP(u_char*& data, int& len)
 
 u_int16_t ParsedPacket::ParseMPLS(u_char*& data, int& len)
 {
-	data += mplsStandardLen;
-	len -= mplsStandardLen;
-	return ETH_P_IP;
+	mpls_hdr* m_mpls = reinterpret_cast<mpls_hdr*>(data);
+	mplsList.push_back(m_mpls);
+	data += sizeof(mpls_hdr);
+	len -= sizeof(mpls_hdr);
+	if (m_mpls->stack_bottom() == 0)
+		return ETH_P_MPLS_UC;
+	u_char nxt = data[0] >> 4;
+	if (nxt == 4)
+		return ETH_P_IP;
+	if (nxt == 6)
+		return ETH_P_IPV6;
+	data += 4; // Pseudowire Eth Control Word (rfc4448)
+	len -= 4;
+	return ParseEth(data, len);
 }
 
 u_int16_t ParsedPacket::Parse8021q(u_char*& data, int& len)

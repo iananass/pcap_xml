@@ -1,7 +1,7 @@
 #include <pcap.h>
 #include <iostream>
 #include <tinyxml.h>
-#include "ParsedPacket.h"
+#include "XMLCoder.h"
 #include "XMLBuilder.h"
 #include <iostream>
 #include <string>
@@ -51,7 +51,6 @@ int main(int argc, char **argv)
     pcap_pkthdr hdr;
     u_int packetIndex = 0;
     while (data = const_cast<u_char *>(pcap_next(p, &hdr))) {
-        ParsedPacket pp(data, hdr.caplen);
         TiXmlElement *packet = new TiXmlElement(std::string("Packet"));
 
         packet->LinkEndChild( new TiXmlComment((std::string("number ") + std::to_string(packetIndex++) ).c_str()) );
@@ -60,27 +59,11 @@ int main(int argc, char **argv)
         packet->SetAttribute("ts_sec", hdr.ts.tv_sec);
         packet->SetAttribute("ts_usec", hdr.ts.tv_usec);
         root->LinkEndChild(packet);
-        if (pp.Eth())
-            packet->LinkEndChild(ToXml(pp.Eth()));
-        for (auto vlan : pp.VlanList())
-            packet->LinkEndChild(ToXml(vlan));
-	for (auto mpls : pp.MPLSList())
-	    packet->LinkEndChild(ToXml(mpls));
-        if (pp.Arp())
-            packet->LinkEndChild(ToXml(pp.Arp()));
-        if (pp.IP())
-            packet->LinkEndChild(ToXml(pp.IP()));
-        if (pp.Icmp())
-            packet->LinkEndChild(ToXml(pp.Icmp()));
-        if (pp.Tcp())
-            packet->LinkEndChild(ToXml(pp.Tcp()));
-        if (pp.Udp())
-            packet->LinkEndChild(ToXml(pp.Udp()));
-        if (pp.DataLen())
-            packet->LinkEndChild(ToXml(pp.Data(), pp.DataLen(), "payload"));
+	XMLCoder coder(data, hdr.caplen, packet);
     }
     if (!args.second)
         doc.Print(stdout);
     else
         doc.SaveFile(args.second);
+    
 }

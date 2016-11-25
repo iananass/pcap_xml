@@ -68,6 +68,28 @@ TiXmlElement *ToXml(iphdr *ip)
 
 }
 
+TiXmlElement* ToXml(gre_hdr* gre)
+{
+    TiXmlElement *greXML = new TiXmlElement("GRE");
+    greXML->SetAttribute("version", gre->version);
+    greXML->SetAttribute("next_proto", ntohs(gre->next_proto));
+    
+    u_char* data = reinterpret_cast<u_char*>(gre) + sizeof(gre_hdr);
+    if (gre->check_presented) {
+        greXML->SetAttribute("check", ByteArrayToString(data, 2, " "));
+        data += 4;
+    }
+    if (gre->key_presented) {
+        greXML->SetAttribute("key", ByteArrayToString(data, 4, " "));
+        data += 4;
+    }
+    if (gre->seq_presented) {
+        greXML->SetAttribute("seq", ByteArrayToString(data, 4, " "));
+        data += 4;
+    }
+    return greXML;
+}
+
 TiXmlElement *ToXml(tcphdr *tcp)
 {
     TiXmlElement *tcpXML = new TiXmlElement("TCP");
@@ -113,12 +135,12 @@ TiXmlElement *ToXml(vlanhdr *vlan)
 
 TiXmlElement* ToXml(mpls_hdr* mpls)
 {
-    TiXmlElement *vlanXML = new TiXmlElement("MPLS");
-    vlanXML->SetAttribute("label", mpls->label());
-    vlanXML->SetAttribute("experimental", mpls->experimental());
-    vlanXML->SetAttribute("stack_bottom", mpls->stack_bottom());
-    vlanXML->SetAttribute("ttl", mpls->ttl());
-    return vlanXML;
+    TiXmlElement *mplsXML = new TiXmlElement("MPLS");
+    mplsXML->SetAttribute("label", mpls->label());
+    mplsXML->SetAttribute("experimental", mpls->experimental());
+    mplsXML->SetAttribute("stack_bottom", mpls->stack_bottom());
+    mplsXML->SetAttribute("ttl", mpls->ttl());
+    return mplsXML;
 }
 
 TiXmlElement *ToXml(arpheader *arp)

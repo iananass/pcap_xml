@@ -77,6 +77,61 @@ int DecodeOptions(TiXmlElement *elem, u_char *data)
 
 }
 
+int DecodeGRE(TiXmlElement *xml, u_char *data)
+{
+    gre_hdr* gre = reinterpret_cast<gre_hdr*>(data);
+    data += sizeof(gre_hdr);
+    int grelen = sizeof(gre_hdr);
+    memset(gre, 0, sizeof(gre_hdr));
+    int version, next;
+    if (xml->QueryValueAttribute("version", &version) != TIXML_SUCCESS
+        || xml->QueryValueAttribute("next_proto", &next) != TIXML_SUCCESS) {
+        std::cerr << "IP hdr parse error\n";
+        return -1;
+    }
+    gre->version = version;
+    gre->next_proto = htons(next);
+    
+    std::string bytes;
+    if (xml->QueryValueAttribute("check", &bytes) == TIXML_SUCCESS) {
+        gre->check_presented = 1;
+        std::stringstream ss(bytes);
+        for (int i = 0; i < 2; ++i) {
+            int tmp;
+            ss >> std::hex >> tmp;
+            data[i] = tmp;
+        }
+        data[2] = 0;
+        data[3] = 0;
+        data += 4;
+        grelen += 4;
+    }
+    if (xml->QueryValueAttribute("key", &bytes) == TIXML_SUCCESS) {
+        gre->key_presented = 1;
+        std::stringstream ss(bytes);
+        for (int i = 0; i < 4; ++i) {
+            int tmp;
+            ss >> std::hex >> tmp;
+            data[i] = tmp;
+        }
+        data += 4;
+        grelen += 4;
+    }
+    if (xml->QueryValueAttribute("seq", &bytes) == TIXML_SUCCESS) {
+        gre->seq_presented = 1;
+        std::stringstream ss(bytes);
+        for (int i = 0; i < 4; ++i) {
+            int tmp;
+            ss >> std::hex >> tmp;
+            data[i] = tmp;
+        }
+        data += 4;
+        grelen += 4;
+    }
+    return grelen;
+
+}
+
 int DecodeIP(TiXmlElement *xml, u_char *data)
 {
     iphdr *ip = reinterpret_cast<iphdr *>(data);
@@ -302,6 +357,7 @@ void ParsePacket(TiXmlElement *pack, Dumper &dumper)
         else if (layerName == "UDP") { parse = DecodeUDP(layer->ToElement(), data); }
         else if (layerName == "ARP") { parse = DecodeARP(layer->ToElement(), data); }
         else if (layerName == "ICMP") { parse = DecodeICMP(layer->ToElement(), data); }
+        else if (layerName == "GRE") { parse = DecodeGRE(layer->ToElement(), data); }
         else if (layerName == "payload") { parse = DecodeData(layer->ToElement(), data); }
         else std::cerr << "Unknown layer: " << layerName << "\n";
         if (parse == -1) {

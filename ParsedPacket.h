@@ -1,13 +1,6 @@
 #ifndef RANAP_PROBE_PARSEDPACKET_H
 #define RANAP_PROBE_PARSEDPACKET_H
 
-struct ethhdr;
-struct tcphdr;
-struct udphdr;
-struct iphdr;
-struct icmphdr;
-struct mpls_hdr;
-
 #include <vector>
 #include <sys/types.h>
 
@@ -69,107 +62,18 @@ struct arpheader
 	u_int8_t dha[6];
 	u_int32_t dpa;
 } __attribute__((packed));
-struct Packet;
 
-class ParsedPacket
+struct gre_hdr
 {
-public:
+    u_int8_t reserved1:4;
+    u_int8_t seq_presented:1;
+    u_int8_t key_presented:1;
+    u_int8_t unused:1;
+    u_int8_t check_presented:1;
+    u_int8_t reserved2:5;
+    u_int8_t version:3;
+    u_int16_t next_proto;
 
-	enum
-	{
-		ethStandardLen = 14,
-		mplsStandardLen = 4,
-		vlanStandardLen = 4,
-		IpStandardLen = 20,
-		tcpStandardLen = 20,
-		udpStandardLen = 8,
-		ProtoTCP = 6,
-		ProtoUDP = 17,
-		ProtoData = 0,
-		ProtoEnd = 0xffff
-	};
-
-	ParsedPacket(u_char* data, int len);
-
-	const std::vector<vlanhdr*>& VlanList()
-	{
-		return vlanList;
-	}
-
-	const auto& MPLSList()
-	{
-		return mplsList;
-	}
-
-	ethhdr* Eth()
-	{
-		return m_eth;
-	}
-
-	iphdr* IP()
-	{
-		return m_ip;
-	}
-
-	tcphdr* Tcp()
-	{
-		return m_tcp;
-	}
-
-	udphdr* Udp()
-	{
-		return m_udp;
-	}
-
-	arpheader* Arp()
-	{
-		return m_arp;
-	}
-
-	icmphdr* Icmp()
-	{
-		return m_icmp;
-	}
-
-	u_char* Data()
-	{
-		return m_payload;
-	}
-
-	int DataLen() const;
-	int IpOffset() const;
-	int TransportOffset() const;
-	int DataOffset() const;
-
-	void RecalcCRC();
-	static u_int16_t ComputeIPChecksum(u_int8_t* data, int len);
-	static u_int16_t ComputeTCPChecksum(u_int8_t* data, size_t len, u_int32_t src_addr, u_int32_t dest_addr);
-private:
-	u_char* m_packetBegin;
-	u_char* m_payload;
-	ethhdr* m_eth;
-	iphdr* m_ip;
-	tcphdr* m_tcp;
-	udphdr* m_udp;
-	arpheader* m_arp;
-	icmphdr* m_icmp;
-	std::vector<vlanhdr*> vlanList;
-	std::vector<mpls_hdr*> mplsList;
-	int m_ipoffset;
-	int m_dataoffset;
-	int m_datasize;
-
-	void Parse(u_char* data, int len);
-	u_int16_t ParseEth(u_char*& data, int& len);
-	u_int16_t ParseGre(u_char*& data, int& len);
-	u_int16_t ParseARP(u_char*& data, int& len);
-	u_int16_t ParseMPLS(u_char*& data, int& len);
-	u_int16_t Parse8021q(u_char*& data, int& len);
-	u_int16_t ParseIP(u_char*& data, int& len);
-	u_int16_t ParseTCP(u_char*& data, int& len);
-	u_int16_t ParseUDP(u_char*& data, int& len);
-	u_int16_t ParseICMP(u_char*& data, int& len);
-	u_int16_t ParseData(u_char*& data, int& len);
-};
+} __attribute__((__packed__));
 
 #endif //RANAP_PROBE_PARSEDPACKET_H

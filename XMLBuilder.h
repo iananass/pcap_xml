@@ -11,10 +11,12 @@ struct vlanhdr;
 struct mpls_hdr;
 struct arpheader;
 struct icmphdr;
+struct gre_hdr;
 class TiXmlElement;
 
 TiXmlElement* ToXml(ethhdr* eth);
 TiXmlElement* ToXml(iphdr* ip);
+TiXmlElement* ToXml(gre_hdr* gre);
 TiXmlElement* ToXml(tcphdr* tcp);
 TiXmlElement* ToXml(udphdr* udp);
 TiXmlElement* ToXml(vlanhdr* vlan);
